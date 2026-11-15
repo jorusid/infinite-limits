@@ -1,0 +1,17 @@
+{
+	"required": true,
+	"package": "com.limitless.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"IntRangeMixin",
+		"ClampingLazyMaxIntRangeMixin",
+		"UnitDoubleMixin",
+		"OptionsScreenMixin",
+		"MinecraftInitMixin",
+		"VideoScreenRedirectMixin",
+		"OptionsHintMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

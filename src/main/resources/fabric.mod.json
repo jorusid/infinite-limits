@@ -1,0 +1,28 @@
+{
+	"schemaVersion": 1,
+	"id": "limitless",
+	"version": "${version}",
+	"name": "Limitless",
+	"description": "Unclamp every client option and push Minecraft parameters to their physical extremes.",
+	"authors": [
+		"dhzjs"
+	],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.limitless.LimitlessClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "limitless.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "26.2",
+		"java": ">=25"
+	}
+}
