@@ -2,6 +2,17 @@
 
 本模组的版本变更记录，按版本倒序。安装包见 [Releases](../../releases)。
 
+## 0.5.3
+
+- 视频设置接管放宽：从"只认原版与 Sodium 两个固定类名"改成"原版 + Sodium 白名单 + 类名特征兜底"，
+  任何以 `VideoSettingsScreen` / `VideoSettings` / `GraphicsSettingsScreen` 结尾的页面都会被接管，
+  解决了装了其他占视频设置页的模组时接管失效、两边参数混在一张页面里的问题
+- 新增 `com.limitless.compat.VideoRedirect`：记住被接管的页面实例与来源名称
+- 新增「打开 xxx 的视频设置」按钮：右下角一键放行，用原页面实例打开那个模组自己的设置页
+- 新增递归防护：放行时置 bypass 开关，`Gui.setScreen` 直接返回，避免"打开→拦截→再打开"死循环
+- 新增橙色提示行，写明本次接管的是原版 / Sodium / 哪个第三方模组的页面
+- `fabric.mod.json` 的 license 由 `MIT` 改为 `All Rights Reserved`，与仓库里的 LICENSE 对齐
+
 ## 0.5.2
 
 - 底部四个按钮压成两排两列，不再横跨一整行

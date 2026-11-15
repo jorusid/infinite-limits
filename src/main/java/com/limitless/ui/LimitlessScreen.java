@@ -1,6 +1,7 @@
 package com.limitless.ui;
 
 import com.limitless.backup.BackupManager;
+import com.limitless.compat.VideoRedirect;
 import com.limitless.config.LimitlessConfig;
 import com.limitless.option.Category;
 import com.limitless.option.OptionMirror;
@@ -182,8 +183,19 @@ public class LimitlessScreen extends Screen {
 		int rowTop = this.height - 76;
 		int rowBottom = this.height - 52;
 		int leftX = this.width / 2 - 130;
-		int rightX = this.width / 2 + 4;
+	int rightX = this.width / 2 + 4;
 		int buttonWidth = 126;
+
+		// 被接管的原始页面（原版 / 钠 / 其他模组）可以一键放行，避免把别人的设置页彻底吞掉
+		if (VideoRedirect.hasPending()) {
+			String label = "打开 " + VideoRedirect.pendingLabel();
+			if (label.length() > 28) {
+				label = label.substring(0, 27) + "...";
+			}
+			this.addRenderableWidget(Button.builder(Component.literal(label),
+					b -> VideoRedirect.openOriginal(this.minecraft))
+					.bounds(this.width - 8 - 214, this.height - 110, 214, 18).build());
+		}
 
 		this.addRenderableWidget(Button.builder(
 				Component.literal(LimitlessConfig.get().extremeMode ? "极限模式: 开" : "极限模式: 关"),
@@ -285,6 +297,14 @@ public class LimitlessScreen extends Screen {
 
 		if (!status.isEmpty()) {
 			graphics.text(this.font, status, 12, this.height - 96, 0xFF88FF88);
+		}
+
+		if (VideoRedirect.hasPending()) {
+			String hint = "已接管：" + VideoRedirect.pendingLabel() + "（右下按钮可打开它自己的设置）";
+			if (hint.length() > 46) {
+				hint = hint.substring(0, 45) + "...";
+			}
+			graphics.text(this.font, hint, 12, this.height - 108, 0xFFFFC24A);
 		}
 
 		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
