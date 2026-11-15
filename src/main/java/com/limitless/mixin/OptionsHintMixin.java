@@ -1,6 +1,7 @@
 package com.limitless.mixin;
 
 import com.limitless.LimitlessClient;
+import com.limitless.i18n.I18n;
 import com.limitless.ui.LimitlessScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -55,9 +56,9 @@ public abstract class OptionsHintMixin {
 				return;
 			}
 
-			this.list.addHeader(Component.literal("以下参数已移至「无限 Limitless」模组"));
+			this.list.addHeader(I18n.tr("hint.vanillaTitle"));
 			this.list.addBig(Button.builder(
-					Component.literal("打开无限 Limitless"),
+					I18n.tr("hint.vanillaButton"),
 					b -> Minecraft.getInstance().gui.setScreen(new LimitlessScreen(self)))
 					.bounds(0, 0, 310, 20).build());
 		} catch (Throwable t) {

@@ -1,19 +1,31 @@
 package com.limitless.option;
 
+import com.limitless.i18n.I18n;
+import net.minecraft.network.chat.Component;
+
 import java.util.Locale;
 
 /** 参数分类：按字段名与翻译键的语义分组。 */
 public enum Category {
-	VIDEO("画面"),
-	SOUND("声音"),
-	CONTROL("操作"),
-	INTERFACE("界面"),
-	OTHER("其他");
+	VIDEO("video"),
+	SOUND("sound"),
+	CONTROL("control"),
+	INTERFACE("interface"),
+	OTHER("other");
 
-	public final String displayName;
+	private final String id;
 
-	Category(String displayName) {
-		this.displayName = displayName;
+	Category(String id) {
+		this.id = id;
+	}
+
+	public String id() {
+		return id;
+	}
+
+	/** 当前语言下的分类名（category.video 之类）。 */
+	public Component label() {
+		return I18n.category(id);
 	}
 
 	public static Category of(String id, String key) {

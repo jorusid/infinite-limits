@@ -155,32 +155,39 @@ public final class BackupManager {
 	}
 
 	private static String explain() {
+		// 注意：这份说明在 Minecraft 构造阶段写出，此时语言管理还没加载，
+		// 不能用 Component.translatable（会拿到原始键名），所以这里直接写双语纯文本。
 		return """
-				设置备份说明
-				============
+				设置备份说明 / Backup Notes
+				==========================
 
 				这个文件夹由「无限 Limitless」模组在首次启动时自动创建。
+				This folder was created automatically by the "Infinite Limitless" mod on first launch.
 
-				文件夹里有三样东西：
-
+				文件夹里有三样东西 / Contents:
 				1. options.txt —— 备份那一刻的原版设置文件，和游戏目录里的同名文件格式完全一致。
+				   A copy of vanilla options.txt at the moment of backup, same format as the one in the game directory.
 				2. optionsof.txt —— 如果当时装了 OptiFine 之类会生成这个文件，也会一并备份。
+				   Present only if something like OptiFine generated it; backed up as well.
 				3. 参数快照.json —— 模组自己记录的全参数快照，界面里的「从备份恢复」就是读它。
+				   The mod's own full-option snapshot; the in-game "Restore backup" button reads this file.
 
-				两种恢复方式：
+				两种恢复方式 / Two ways to restore:
+					【方式一：游戏内，最省事 / In game, easiest】
+					   进游戏 → 选项 → 无限 Limitless → 点「从备份恢复」。
+					   Options → Infinite Limitless → "Restore backup". Values are written back immediately.
+					【方式二：手工替换，最彻底 / Manual, most thorough】
+					   先把游戏完全关掉（否则退出时游戏会把当前设置覆盖回去），
+					   然后把这里的 options.txt 复制到游戏目录，覆盖同名文件，再启动游戏。
+					   Quit the game completely first, then copy options.txt here over the one in the game directory.
 
-				【方式一：游戏内，最省事】
-				   进游戏 → 选项 → 无限 Limitless → 点「从备份恢复」。
-				   会读取最新一份备份的参数快照，逐项写回，立即生效。
-
-				【方式二：手工替换，最彻底】
-				   先把游戏完全关掉（否则退出时游戏会把当前设置覆盖回去），
-				   然后把这里的 options.txt 复制到游戏目录，覆盖同名文件，再启动游戏。
-
-				注意：
+				注意 / Notes:
 				- 备份是首次启动时的状态，也就是「改之前」的样子。
+				  The backup captures the state before you changed anything.
 				- 想多存几个不同阶段的备份，可以把整个文件夹复制一份改名，模组同样能识别。
+				  To keep more snapshots, copy this folder and rename it; the mod still finds it.
 				- 渲染距离、Mipmap、图形档次这类项改动后可能要重启游戏才彻底生效。
+				  Render distance, mipmaps and graphics presets may need a game restart to fully apply.
 				""";
 	}
 }

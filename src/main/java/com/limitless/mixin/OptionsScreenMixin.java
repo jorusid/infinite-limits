@@ -1,6 +1,7 @@
 package com.limitless.mixin;
 
 import com.limitless.LimitlessClient;
+import com.limitless.i18n.I18n;
 import com.limitless.ui.LimitlessScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -20,7 +21,7 @@ import java.lang.reflect.Method;
 public abstract class OptionsScreenMixin {
 	@Inject(method = "init", at = @At("TAIL"))
 	private void limitless$entryButton(CallbackInfo ci) {
-		Button entry = Button.builder(Component.literal("无限 Limitless"), b -> {
+		Button entry = Button.builder(I18n.tr("entry.button"), b -> {
 			Minecraft mc = Minecraft.getInstance();
 			mc.gui.setScreen(new LimitlessScreen(mc.gui.screen()));
 		}).bounds(8, 6, 120, 20).build();

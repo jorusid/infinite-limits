@@ -3,12 +3,14 @@ package com.limitless.ui;
 import com.limitless.backup.BackupManager;
 import com.limitless.compat.VideoRedirect;
 import com.limitless.config.LimitlessConfig;
+import com.limitless.i18n.I18n;
 import com.limitless.option.Category;
 import com.limitless.option.OptionMirror;
 import net.minecraft.client.Options;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -19,14 +21,17 @@ import java.util.List;
 /**
  * 无限模组主界面：按「画面 / 声音 / 操作 / 界面 / 其他」分类列出全部 OptionInstance，
  * 每项可直接键入任意数值（含负数与超大值）。
+ * <p>
+ * 文案全部走翻译键，随客户端语言切换；左下角是 GitHub 仓库入口。
  */
 public class LimitlessScreen extends Screen {
 	private static final int ROW_HEIGHT = 22;
 	private static final int TOP = 78;
+	private static final String REPO_URL = "https://github.com/jorusid/infinite-limits";
 
 	/** 一行：要么是分类标题（header 非空），要么是一个参数（entry 非空）。 */
-	private record Row(String header, OptionMirror.Entry entry) {
-		static Row header(String text) {
+	private record Row(Component header, OptionMirror.Entry entry) {
+		static Row header(Component text) {
 			return new Row(text, null);
 		}
 
@@ -44,7 +49,7 @@ public class LimitlessScreen extends Screen {
 	private String status = "";
 
 	public LimitlessScreen(Screen parent) {
-		super(Component.literal("无限 Limitless"));
+		super(I18n.tr("screen.title"));
 		this.parent = parent;
 	}
 
@@ -80,7 +85,7 @@ public class LimitlessScreen extends Screen {
 				continue;
 			}
 			if (filter == null) {
-				rows.add(Row.header(category.displayName + "  ·  " + inCategory.size() + " 项"));
+				rows.add(Row.header(I18n.tr("screen.header", category.label(), inCategory.size())));
 			}
 			for (OptionMirror.Entry entry : inCategory) {
 				rows.add(Row.item(entry));
@@ -104,14 +109,14 @@ public class LimitlessScreen extends Screen {
 
 			if (value instanceof Boolean) {
 				Button button = Button.builder(
-						Component.literal(Boolean.TRUE.equals(value) ? "开" : "关"),
+						stateLabel(Boolean.TRUE.equals(value)),
 						b -> {
 							OptionMirror.apply(entry.option(), !Boolean.TRUE.equals(entry.option().get()));
-							b.setMessage(Component.literal(Boolean.TRUE.equals(entry.option().get()) ? "开" : "关"));
+							b.setMessage(stateLabel(Boolean.TRUE.equals(entry.option().get())));
 						}).bounds(this.width - 8 - boxWidth, y, boxWidth, 18).build();
 				this.addRenderableWidget(button);
 			} else if (value instanceof Number) {
-				EditBox box = new EditBox(this.font, this.width - 8 - boxWidth, y, boxWidth, 18, Component.literal("值"));
+				EditBox box = new EditBox(this.font, this.width - 8 - boxWidth, y, boxWidth, 18, I18n.tr("screen.valueBox"));
 				box.setValue(trim(value));
 				box.setResponder(text -> {
 					Object parsed = OptionMirror.parse(entry.option(), text);
@@ -137,17 +142,21 @@ public class LimitlessScreen extends Screen {
 		buildFooter();
 	}
 
-	/** 顶部：上一页 / 页码 / 下一页。 */
+	private static Component stateLabel(boolean on) {
+		return I18n.tr(on ? "state.on" : "state.off");
+	}
+
+	/** 顶部：上一页 / 下一页（页码文字在 render 里画）。 */
 	private void buildTopBar() {
 		int y = 52;
-		this.addRenderableWidget(Button.builder(Component.literal("< 上一页"), b -> {
+		this.addRenderableWidget(Button.builder(I18n.tr("button.prev"), b -> {
 			if (page > 0) {
 				page--;
 				rebuild();
 			}
 		}).bounds(12, y, 72, 18).build());
 
-		this.addRenderableWidget(Button.builder(Component.literal("下一页 >"), b -> {
+		this.addRenderableWidget(Button.builder(I18n.tr("button.next"), b -> {
 			if (page + 1 < pageCount()) {
 				page++;
 				rebuild();
@@ -156,9 +165,8 @@ public class LimitlessScreen extends Screen {
 	}
 
 	private void buildFilterBar() {
-		String[] names = {"全部", "画面", "声音", "操作", "界面", "其他"};
 		Category[] values = {null, Category.VIDEO, Category.SOUND, Category.CONTROL, Category.INTERFACE, Category.OTHER};
-		int count = names.length;
+		int count = values.length;
 		int gap = 4;
 		int buttonWidth = Math.min(52, Math.max(26, (this.width - 24 - gap * (count - 1)) / count));
 		int totalWidth = buttonWidth * count + gap * (count - 1);
@@ -168,8 +176,9 @@ public class LimitlessScreen extends Screen {
 		for (int i = 0; i < count; i++) {
 			Category target = values[i];
 			boolean active = (filter == null && target == null) || (filter != null && filter == target);
-			String label = (active ? "▸" : "") + names[i];
-			this.addRenderableWidget(Button.builder(Component.literal(label), b -> {
+			Component name = target == null ? I18n.tr("filter.all") : target.label();
+			Component label = active ? I18n.tr("filter.active", name) : name;
+			this.addRenderableWidget(Button.builder(label, b -> {
 				filter = target;
 				page = 0;
 				buildRows();
@@ -183,35 +192,33 @@ public class LimitlessScreen extends Screen {
 		int rowTop = this.height - 76;
 		int rowBottom = this.height - 52;
 		int leftX = this.width / 2 - 130;
-	int rightX = this.width / 2 + 4;
+		int rightX = this.width / 2 + 4;
 		int buttonWidth = 126;
 
-		// 右下角「视频设置」：进入入口页，页面里才是被接管的各家视频设置页
-		int videoX = Math.max(this.width / 2 + 134, this.width - 8 - 100);
-		this.addRenderableWidget(Button.builder(Component.literal("视频设置"),
-				b -> this.minecraft.gui.setScreen(new VideoRedirectScreen(this)))
-				.bounds(videoX, rowBottom, 100, 20).build());
-
 		this.addRenderableWidget(Button.builder(
-				Component.literal(LimitlessConfig.get().extremeMode ? "极限模式: 开" : "极限模式: 关"),
+				I18n.tr("button.extreme", stateLabel(LimitlessConfig.get().extremeMode)),
 				b -> {
 					LimitlessConfig cfg = LimitlessConfig.get();
 					cfg.extremeMode = !cfg.extremeMode;
 					cfg.save();
-					b.setMessage(Component.literal(cfg.extremeMode ? "极限模式: 开" : "极限模式: 关"));
+					b.setMessage(I18n.tr("button.extreme", stateLabel(cfg.extremeMode)));
 				}).bounds(leftX, rowTop, buttonWidth, 20).build());
 
 		Path newestBackup = BackupManager.newest();
 		this.addRenderableWidget(Button.builder(
-				Component.literal("从备份恢复"), b -> {
+				I18n.tr("button.restore"), b -> {
 					int restored = BackupManager.restore(this.minecraft.options);
-					status = restored > 0
-							? ("已从备份恢复 " + restored + " 项参数")
-							: (restored == 0 ? "备份里没有可识别的参数" : "没有找到可用备份");
+					if (restored > 0) {
+						status = I18n.trs("status.restored", restored);
+					} else if (restored == 0) {
+						status = I18n.trs("status.backupEmpty");
+					} else {
+						status = I18n.trs("status.noBackup");
+					}
 					rebuild();
 				}).bounds(rightX, rowTop, buttonWidth, 20).build());
 
-		this.addRenderableWidget(Button.builder(Component.literal("全部恢复默认"), b -> {
+		this.addRenderableWidget(Button.builder(I18n.tr("button.resetAll"), b -> {
 			for (OptionMirror.Entry e : entries) {
 				OptionMirror.restoreDefault(e.option());
 			}
@@ -220,11 +227,22 @@ public class LimitlessScreen extends Screen {
 			rebuild();
 		}).bounds(leftX, rowBottom, buttonWidth, 20).build());
 
-		this.addRenderableWidget(Button.builder(Component.literal("完成"), b -> onClose())
+		this.addRenderableWidget(Button.builder(I18n.tr("button.done"), b -> onClose())
 				.bounds(rightX, rowBottom, buttonWidth, 20).build());
 
+		// 左下角：GitHub 仓库入口，走原版的链接确认弹窗
+		this.addRenderableWidget(Button.builder(I18n.tr("button.github"),
+				b -> ConfirmLinkScreen.confirmLinkNow(this, REPO_URL))
+				.bounds(8, rowBottom, 100, 20).build());
+
+		// 右下角「视频设置」：进入入口页，页面里才是被接管的各家视频设置页
+		int videoX = Math.max(this.width / 2 + 134, this.width - 8 - 100);
+		this.addRenderableWidget(Button.builder(I18n.tr("button.video"),
+				b -> this.minecraft.gui.setScreen(new VideoRedirectScreen(this)))
+				.bounds(videoX, rowBottom, 100, 20).build());
+
 		if (status.isEmpty() && newestBackup != null) {
-			status = "最近备份：" + newestBackup.getFileName();
+			status = I18n.trs("status.latestBackup", newestBackup.getFileName().toString());
 		}
 	}
 
@@ -265,11 +283,11 @@ public class LimitlessScreen extends Screen {
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		graphics.fill(0, 0, this.width, this.height, 0xCC101010);
 		graphics.centeredText(this.font, this.title, this.width / 2, 10, 0xFFFFFFFF);
+
+		Component filterName = filter == null ? I18n.tr("filter.all") : filter.label();
+		Component modeName = I18n.tr(LimitlessConfig.get().extremeMode ? "mode.unclamped" : "mode.vanilla");
 		graphics.centeredText(this.font,
-				Component.literal("第 " + (page + 1) + " / " + pageCount() + " 页 · "
-						+ (filter == null ? "全部 " : filter.displayName + " ")
-						+ entries.size() + " 项 · "
-						+ (LimitlessConfig.get().extremeMode ? "已解除钳制" : "原版范围")),
+				I18n.tr("screen.pageInfo", page + 1, pageCount(), filterName, entries.size(), modeName),
 				this.width / 2, 57, 0xFFA0A0A0);
 
 		int start = page * rowsPerPage;
@@ -278,7 +296,7 @@ public class LimitlessScreen extends Screen {
 			Row row = rows.get(i);
 			int y = TOP + (i - start) * ROW_HEIGHT;
 			if (row.header() != null) {
-				graphics.text(this.font, row.header(), 12, y + 5, 0xFFFFC24A);
+				graphics.text(this.font, row.header().getString(), 12, y + 5, 0xFFFFC24A);
 				continue;
 			}
 			OptionMirror.Entry entry = row.entry();
@@ -295,8 +313,8 @@ public class LimitlessScreen extends Screen {
 		}
 
 		if (!VideoRedirect.isEmpty()) {
-			String hint = "已接管 " + VideoRedirect.list().size() + " 个视频设置页（右下「视频设置」可打开它们）";
-			graphics.text(this.font, hint, 12, this.height - 108, 0xFFFFC24A);
+			graphics.text(this.font, I18n.trs("hint.captured", VideoRedirect.list().size()),
+					12, this.height - 108, 0xFFFFC24A);
 		}
 
 		super.extractRenderState(graphics, mouseX, mouseY, partialTick);

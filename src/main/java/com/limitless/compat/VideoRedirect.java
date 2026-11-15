@@ -1,7 +1,9 @@
 package com.limitless.compat;
 
+import com.limitless.i18n.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,14 +20,18 @@ import java.util.Locale;
  *     <li>提供一个「放行一次」的开关，避免放行时又被自己的 mixin 拦回来（死循环）；</li>
  *     <li>把类名翻译成用户看得懂的来源描述（原版 / 钠 / 某个第三方模组）。</li>
  * </ol>
+ * 来源描述存的是翻译键而不是成品字符串，这样玩家中途切换语言时列表会跟着变。
  * 放在独立的普通类里而不是 mixin 的静态字段，是为了避免 mixin 静态成员在重映射阶段
  * 与其他模组插进来的改动互相影响。
  */
 public final class VideoRedirect {
 	private static final int MAX_ENTRIES = 8;
 
-	/** 一条被接管的记录。 */
-	public record Captured(String label, Screen screen) {
+	/** 一条被接管的记录：翻译键 + 参数 + 页面实例。 */
+	public record Captured(String key, Object[] args, Screen screen) {
+		public Component label() {
+			return I18n.tr(key, args);
+		}
 	}
 
 	private static boolean bypass = false;
@@ -44,21 +50,34 @@ public final class VideoRedirect {
 		if (screen == null) {
 			return;
 		}
-		String label = describe(screen.getClass().getName());
+		String className = screen.getClass().getName();
 		for (int i = 0; i < captured.size(); i++) {
-			if (captured.get(i).label().equals(label)) {
-				captured.set(i, new Captured(label, screen));
-				return;
-			}
-			if (captured.get(i).screen().getClass() == screen.getClass()) {
-				captured.set(i, new Captured(label, screen));
+			Captured existing = captured.get(i);
+			if (existing.screen().getClass() == screen.getClass()) {
+				captured.set(i, build(className, screen));
 				return;
 			}
 		}
 		if (captured.size() >= MAX_ENTRIES) {
 			captured.remove(0);
 		}
-		captured.add(new Captured(label, screen));
+		captured.add(build(className, screen));
+	}
+
+	private static Captured build(String className, Screen screen) {
+		String lower = className.toLowerCase(Locale.ROOT);
+		if (lower.startsWith("net.minecraft.")) {
+			return new Captured("source.vanilla", new Object[0], screen);
+		}
+		if (lower.contains("sodium") || lower.contains("caffeinemc")) {
+			return new Captured("source.sodium", new Object[0], screen);
+		}
+		String simple = className.substring(className.lastIndexOf('.') + 1);
+		String modId = guessModId(className);
+		if (modId.isEmpty()) {
+			return new Captured("source.mod", new Object[]{simple}, screen);
+		}
+		return new Captured("source.modWithId", new Object[]{modId, simple}, screen);
 	}
 
 	/** 当前收集到的页面（副本，调用方改动不影响内部状态）。 */
@@ -85,26 +104,6 @@ public final class VideoRedirect {
 			bypass = false;
 			captured.removeIf(entry -> entry.screen() == target);
 		}
-	}
-
-	/** 把类名翻译成人话。 */
-	public static String describe(String className) {
-		if (className == null || className.isEmpty()) {
-			return "未知页面";
-		}
-		String lower = className.toLowerCase(Locale.ROOT);
-		if (lower.startsWith("net.minecraft.")) {
-			return "原版视频设置";
-		}
-		if (lower.contains("sodium") || lower.contains("caffeinemc")) {
-			return "Sodium（钠）的视频设置";
-		}
-		String simple = className.substring(className.lastIndexOf('.') + 1);
-		String modId = guessModId(className);
-		if (modId.isEmpty()) {
-			return "其他模组视频设置（" + simple + "）";
-		}
-		return "其他模组视频设置（" + modId + " / " + simple + "）";
 	}
 
 	/**

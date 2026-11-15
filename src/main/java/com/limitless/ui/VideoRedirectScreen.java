@@ -1,6 +1,7 @@
 package com.limitless.ui;
 
 import com.limitless.compat.VideoRedirect;
+import com.limitless.i18n.I18n;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -20,7 +21,7 @@ public class VideoRedirectScreen extends Screen {
 	private final Screen parent;
 
 	public VideoRedirectScreen(Screen parent) {
-		super(Component.literal("视频设置入口"));
+		super(I18n.tr("redirect.title"));
 		this.parent = parent;
 	}
 
@@ -32,17 +33,14 @@ public class VideoRedirectScreen extends Screen {
 
 		for (int i = 0; i < list.size(); i++) {
 			VideoRedirect.Captured captured = list.get(i);
-			String label = "打开 " + captured.label();
-			if (label.length() > 34) {
-				label = label.substring(0, 33) + "...";
-			}
 			Screen target = captured.screen();
-			this.addRenderableWidget(Button.builder(Component.literal(label),
+			this.addRenderableWidget(Button.builder(
+					I18n.tr("redirect.open", captured.label()),
 					b -> VideoRedirect.openOriginal(this.minecraft, target))
 					.bounds(this.width / 2 - BUTTON_WIDTH / 2, startY + i * ROW_HEIGHT, BUTTON_WIDTH, 20).build());
 		}
 
-		this.addRenderableWidget(Button.builder(Component.literal("返回"), b -> onClose())
+		this.addRenderableWidget(Button.builder(I18n.tr("redirect.back"), b -> onClose())
 				.bounds(this.width / 2 - 80, this.height - 44, 160, 20).build());
 	}
 
@@ -50,13 +48,10 @@ public class VideoRedirectScreen extends Screen {
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		graphics.fill(0, 0, this.width, this.height, 0xCC101010);
 		graphics.centeredText(this.font, this.title, this.width / 2, 14, 0xFFFFFFFF);
-		graphics.centeredText(this.font,
-				Component.literal("点任意一项，打开那个模组自己的视频设置页（不会再次被本模组拦下）"),
-				this.width / 2, 30, 0xFFA0A0A0);
+		graphics.centeredText(this.font, I18n.tr("redirect.hint"), this.width / 2, 30, 0xFFA0A0A0);
 
 		if (VideoRedirect.isEmpty()) {
-			graphics.centeredText(this.font,
-					Component.literal("还没有接管到任何页面：先去主菜单点一次「视频设置」"),
+			graphics.centeredText(this.font, I18n.tr("redirect.empty"),
 					this.width / 2, this.height / 2, 0xFFFFC24A);
 		}
 
