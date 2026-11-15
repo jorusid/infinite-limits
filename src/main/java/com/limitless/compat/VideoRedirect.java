@@ -3,15 +3,18 @@ package com.limitless.compat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
  * 视频设置页拦截的共享状态。
  * <p>
- * 拦截点在 {@code Gui.setScreen}，但被拦下来的页面实例不能丢：用户在模组界面里可以点
- * 「打开原始视频设置」把它原封不动地放出去。这里同时负责三件事：
+ * 拦截点在 {@code Gui.setScreen}，被拦下来的页面实例不丢：模组界面里点「视频设置」进入
+ * 一个入口列表，里面逐个列出被接管过的页面，点哪一个就把哪一个原样放出去。
+ * 这里同时负责三件事：
  * <ol>
- *     <li>记住最近一次被接管的页面实例与来源名称；</li>
+ *     <li>按来源类名收集被接管的页面（同一来源只保留最新实例）；</li>
  *     <li>提供一个「放行一次」的开关，避免放行时又被自己的 mixin 拦回来（死循环）；</li>
  *     <li>把类名翻译成用户看得懂的来源描述（原版 / 钠 / 某个第三方模组）。</li>
  * </ol>
@@ -19,9 +22,14 @@ import java.util.Locale;
  * 与其他模组插进来的改动互相影响。
  */
 public final class VideoRedirect {
+	private static final int MAX_ENTRIES = 8;
+
+	/** 一条被接管的记录。 */
+	public record Captured(String label, Screen screen) {
+	}
+
 	private static boolean bypass = false;
-	private static Screen lastIntercepted = null;
-	private static String lastLabel = "";
+	private static final List<Captured> captured = new ArrayList<>();
 
 	private VideoRedirect() {
 	}
@@ -31,28 +39,42 @@ public final class VideoRedirect {
 		return bypass;
 	}
 
-	/** 记录一次拦截。 */
+	/** 记录一次拦截：同一来源替换旧实例，不同来源追加。 */
 	public static void remember(Screen screen) {
-		lastIntercepted = screen;
-		lastLabel = describe(screen.getClass().getName());
+		if (screen == null) {
+			return;
+		}
+		String label = describe(screen.getClass().getName());
+		for (int i = 0; i < captured.size(); i++) {
+			if (captured.get(i).label().equals(label)) {
+				captured.set(i, new Captured(label, screen));
+				return;
+			}
+			if (captured.get(i).screen().getClass() == screen.getClass()) {
+				captured.set(i, new Captured(label, screen));
+				return;
+			}
+		}
+		if (captured.size() >= MAX_ENTRIES) {
+			captured.remove(0);
+		}
+		captured.add(new Captured(label, screen));
 	}
 
-	/** 是否有可放行的页面。 */
-	public static boolean hasPending() {
-		return lastIntercepted != null;
+	/** 当前收集到的页面（副本，调用方改动不影响内部状态）。 */
+	public static List<Captured> list() {
+		return new ArrayList<>(captured);
 	}
 
-	/** 被接管页面的来源描述。 */
-	public static String pendingLabel() {
-		return lastLabel;
+	public static boolean isEmpty() {
+		return captured.isEmpty();
 	}
 
 	/**
-	 * 打开被接管的原始页面：放行一次，交给原页面自己初始化。
-	 * 成功后清空记录，避免下次拿着一个已经初始化过的旧实例重复打开。
+	 * 打开指定的被接管页面：放行一次，交给原页面自己初始化。
+	 * 成功后把它从列表里摘掉，避免拿着一个初始化过的旧实例反复打开。
 	 */
-	public static void openOriginal(Minecraft minecraft) {
-		Screen target = lastIntercepted;
+	public static void openOriginal(Minecraft minecraft, Screen target) {
 		if (target == null || minecraft == null) {
 			return;
 		}
@@ -61,8 +83,7 @@ public final class VideoRedirect {
 			minecraft.gui.setScreen(target);
 		} finally {
 			bypass = false;
-			lastIntercepted = null;
-			lastLabel = "";
+			captured.removeIf(entry -> entry.screen() == target);
 		}
 	}
 

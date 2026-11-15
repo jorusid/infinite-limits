@@ -186,16 +186,11 @@ public class LimitlessScreen extends Screen {
 	int rightX = this.width / 2 + 4;
 		int buttonWidth = 126;
 
-		// 被接管的原始页面（原版 / 钠 / 其他模组）可以一键放行，避免把别人的设置页彻底吞掉
-		if (VideoRedirect.hasPending()) {
-			String label = "打开 " + VideoRedirect.pendingLabel();
-			if (label.length() > 28) {
-				label = label.substring(0, 27) + "...";
-			}
-			this.addRenderableWidget(Button.builder(Component.literal(label),
-					b -> VideoRedirect.openOriginal(this.minecraft))
-					.bounds(this.width - 8 - 214, this.height - 110, 214, 18).build());
-		}
+		// 右下角「视频设置」：进入入口页，页面里才是被接管的各家视频设置页
+		int videoX = Math.max(this.width / 2 + 134, this.width - 8 - 100);
+		this.addRenderableWidget(Button.builder(Component.literal("视频设置"),
+				b -> this.minecraft.gui.setScreen(new VideoRedirectScreen(this)))
+				.bounds(videoX, rowBottom, 100, 20).build());
 
 		this.addRenderableWidget(Button.builder(
 				Component.literal(LimitlessConfig.get().extremeMode ? "极限模式: 开" : "极限模式: 关"),
@@ -299,11 +294,8 @@ public class LimitlessScreen extends Screen {
 			graphics.text(this.font, status, 12, this.height - 96, 0xFF88FF88);
 		}
 
-		if (VideoRedirect.hasPending()) {
-			String hint = "已接管：" + VideoRedirect.pendingLabel() + "（右下按钮可打开它自己的设置）";
-			if (hint.length() > 46) {
-				hint = hint.substring(0, 45) + "...";
-			}
+		if (!VideoRedirect.isEmpty()) {
+			String hint = "已接管 " + VideoRedirect.list().size() + " 个视频设置页（右下「视频设置」可打开它们）";
 			graphics.text(this.font, hint, 12, this.height - 108, 0xFFFFC24A);
 		}
 
