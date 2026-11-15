@@ -1,0 +1,85 @@
+Infinite Limits — 版权与使用条款 / Copyright and Terms of Use
+
+Copyright (c) 2026 jorusid. All Rights Reserved.
+版权所有 (c) 2026 jorusid。保留所有权利。
+
+本文件规定他人可以对这个模组（源码与构建产物 JAR）做什么、不可以做什么。
+以下中文条款为准，英文部分仅为方便阅读的译文。
+
+一、允许（无需事先征得作者同意）
+
+1. 下载、安装、游玩本模组。
+2. 在单人游戏、你自己的服务器，或你朋友的服务器上使用本模组。
+3. 把未经修改的原始 JAR，原样放入整合包或服务器客户端包中分发，前提是：
+   a. 不收取任何费用（整合包本身可以收费，但不得因包含本模组而单独收费或设置付费解锁）；
+   b. 明确标注作者为 jorusid，并给出本仓库链接；
+   c. 不声称本模组由你开发。
+4. 为个人使用而修改本模组，并在自己的设备上运行修改后的版本。
+5. 引用本仓库的代码片段用于学习、讨论、评测、教程或新闻报道。
+
+二、禁止（需事先取得作者的书面同意）
+
+1. 把修改后的版本（包括改名、改图标、改包名、只改一部分）重新发布到任何平台，
+   无论是否收费、是否标注原作者。
+2. 将本模组或其任何部分用于商业目的，包括但不限于：付费下载、付费墙后提供、
+   广告解锁、捆绑销售、作为付费服务的一部分提供。
+3. 整体或实质性地复制本项目的代码，另起一个项目发布。
+4. 移除或隐藏本模组中的作者信息、版权声明。
+5. 通过任何方式绕过上述限制（例如换一个名字发布"同款"）。
+
+三、关于"控制权"
+
+作者保留对本项目的全部权利，包括但不限于随时修改本条款、变更许可证、
+停止维护、删除仓库或下架发布物的权利。任何已经发布的历史版本，按其发布当时
+有效的条款执行；本条款的变更不追溯适用于已经发生的合法使用行为。
+
+四、免责
+
+本模组按"现状"提供，不提供任何明示或暗示的担保。修改极端参数可能导致游戏崩溃、
+存档损坏、帧率崩塌或设备过热。使用本模组所造成的任何直接或间接损失，作者不承担责任。
+使用即表示你已理解并自行承担上述风险。
+
+五、授权申请
+
+如需获得本条款未明确授予的权利（例如整合包内修改分发、视频/直播商业合作、
+二次开发），请通过本仓库的 Issues 联系作者说明用途。
+
+
+--- English (translation for convenience only; the Chinese text above governs) ---
+
+Copyright (c) 2026 jorusid. All Rights Reserved.
+
+1. PERMITTED (no prior permission required)
+   1.1 Download, install and play this mod.
+   1.2 Use it in singleplayer, on your own server, or on a friend's server.
+   1.3 Include the unmodified original JAR, as-is, in a modpack or server client pack, provided that:
+       (a) no fee is charged for access to this mod specifically;
+       (b) the author (jorusid) and a link to this repository are clearly credited;
+       (c) you do not claim authorship of this mod.
+   1.4 Modify the mod for personal use and run the modified version on your own devices.
+   1.5 Quote portions of the source for study, discussion, review, tutorials or news reporting.
+
+2. PROHIBITED (prior written permission required)
+   2.1 Redistributing modified versions (renamed, re-iconed, re-packaged, or partially modified)
+       on any platform, whether free or paid, with or without credit.
+   2.2 Any commercial use, including paid downloads, paywalls, ad-gated access, bundling for sale,
+       or inclusion in a paid service.
+   2.3 Copying this project's code, in whole or in substance, into another published project.
+   2.4 Removing or obscuring author information or copyright notices.
+   2.5 Circumventing these restrictions by any means, including publishing a rebranded copy.
+
+3. RESERVED RIGHTS
+   The author retains all rights, including the right to change these terms, change the license,
+   stop maintaining, delete the repository, or withdraw downloads at any time. Historical releases
+   remain governed by the terms in effect when they were published; changes are not retroactive
+   to lawful use that already occurred.
+
+4. DISCLAIMER
+   This mod is provided "as is", without warranty of any kind. Extreme values may crash the game,
+   corrupt worlds, destroy frame rate, or overheat hardware. The author is not liable for any
+   direct or indirect damages arising from its use. Use constitutes acceptance of these risks.
+
+5. PERMISSION REQUESTS
+   For rights not expressly granted above (e.g. modified redistribution inside a modpack,
+   commercial video/streaming collaboration, derivative projects), contact the author
+   through the Issues section of this repository, stating the intended use.
