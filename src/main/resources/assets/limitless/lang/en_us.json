@@ -57,5 +57,6 @@
 	"limitless.warning.vanilla.line2": "The vanilla screen re-validates and re-saves against vanilla ranges, so out-of-range values can be reset.",
 	"limitless.warning.vanilla.line3": "To keep your current values, press \"Back to mod menu\" below.",
 	"limitless.warning.vanilla.confirm": "Open vanilla anyway",
-	"limitless.warning.vanilla.back": "Back to mod menu"
+	"limitless.warning.vanilla.back": "Back to mod menu",
+	"limitless.screen.version": "Infinite Limitless v%s"
 }

@@ -57,5 +57,6 @@
 	"limitless.warning.vanilla.line2": "原版頁面儲存時會按原版範圍重新校驗，超出範圍的值會被重置。",
 	"limitless.warning.vanilla.line3": "想保留目前數值，請點下面的「返回 mod 選單」。",
 	"limitless.warning.vanilla.confirm": "確認開啟原版",
-	"limitless.warning.vanilla.back": "返回 mod 選單"
+	"limitless.warning.vanilla.back": "返回 mod 選單",
+	"limitless.screen.version": "無限 Limitless v%s"
 }

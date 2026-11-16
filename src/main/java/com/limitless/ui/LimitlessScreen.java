@@ -6,6 +6,7 @@ import com.limitless.config.LimitlessConfig;
 import com.limitless.i18n.I18n;
 import com.limitless.option.Category;
 import com.limitless.option.OptionMirror;
+import com.limitless.update.UpdateChecker;
 import net.minecraft.client.Options;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -323,6 +324,10 @@ public class LimitlessScreen extends Screen {
 			graphics.text(this.font, I18n.trs("hint.captured", VideoRedirect.list().size()),
 					12, this.height - 108, 0xFFFFC24A);
 		}
+
+		// 底部中间一行版本号小字：直接读 mod 元数据，不会跟实际装的对不上
+		graphics.centeredText(this.font, I18n.tr("screen.version", UpdateChecker.currentVersion()),
+				this.width / 2, this.height - 15, 0xFF808080);
 
 		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 	}

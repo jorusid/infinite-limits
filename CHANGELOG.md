@@ -2,6 +2,12 @@
 
 本模组的版本变更记录，按版本倒序。安装包见 [Releases](../../releases)。
 
+## 0.6.7
+
+- 模组界面底部中间加一行版本号小字（`无限 Limitless v0.6.7`），灰色小字，随语言切换
+  - 版本号直接读 mod 元数据（`FabricLoader` 的 mod 容器），不会和实际装的对不上
+- 新增 1 个翻译键 ×3 语言（`zh_cn` / `zh_tw` / `en_us` 各 60 键，键集合已验证一致）
+
 ## 0.6.6
 
 - **修复更新提示从不弹窗**：`TitleScreenUpdateMixin` 从来没被写进 `limitless.mixins.json` 的
