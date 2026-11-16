@@ -2,6 +2,18 @@
 
 本模组的版本变更记录，按版本倒序。安装包见 [Releases](../../releases)。
 
+## 0.6.4
+
+- 修复「游戏内从来不弹更新提示」：
+  - 根因：Java 只信任 JDK 自带 `cacerts`；Steam++ 之类的加速器会接管 HTTPS 并换上自己的根证书
+    （`CN=SteamTools Certificate`），证书装在 Windows 证书库里，浏览器能用、Java 用不了，
+    握手抛 `PKIX path building failed`，检查结果被按「无更新」处理，于是永远静默
+  - 新增 `update/UpdateHttp`：先按 JDK 默认信任库校验，**不通过时才回退 Windows 系统证书库**
+    （`Windows-ROOT`），且只作用于更新检查与下载这一路流量，不改任何全局 SSL 配置
+  - 回退发生时打一条 WARN，说明连接可能经过本机中间人
+  - 检查失败且错误里含 `PKIX` / `certificate` 时，日志额外提示"可能是加速器接管了 HTTPS"
+  - 非 Windows 平台没有系统证书库，保持默认校验
+
 ## 0.6.3
 
 - 自动换版按平台分流，补上 macOS / Linux 支持：

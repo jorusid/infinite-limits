@@ -107,10 +107,7 @@ public final class UpdateChecker {
 				return;
 			}
 
-			HttpClient client = HttpClient.newBuilder()
-					.connectTimeout(Duration.ofSeconds(6))
-					.followRedirects(HttpClient.Redirect.NORMAL)
-					.build();
+			HttpClient client = UpdateHttp.newClient(Duration.ofSeconds(6));
 			HttpRequest request = HttpRequest.newBuilder(URI.create(API_URL))
 					.header("User-Agent", "Limitless/" + currentVersion())
 					.header("Accept", "application/vnd.github+json")
@@ -161,6 +158,11 @@ public final class UpdateChecker {
 			lastError = t.toString();
 			status = Status.UP_TO_DATE;
 			LOGGER_INFO("检查失败（按无更新处理）: " + t);
+			String text = String.valueOf(t);
+			if (text.contains("PKIX") || text.contains("certificate")) {
+				LOGGER_INFO("提示：证书校验失败通常是加速器 / 抓包工具接管了 HTTPS（如 Steam++）。"
+						+ "已尝试回退系统证书库，仍失败则请临时关闭这类工具");
+			}
 		}
 	}
 

@@ -103,10 +103,7 @@ public final class UpdateInstaller {
 				Path target = stagingDir().resolve("limitless-" + version + ".jar");
 				temp = stagingDir().resolve("limitless-" + version + ".jar.tmp");
 
-				HttpClient client = HttpClient.newBuilder()
-						.connectTimeout(java.time.Duration.ofSeconds(10))
-						.followRedirects(HttpClient.Redirect.NORMAL)
-						.build();
+				HttpClient client = UpdateHttp.newClient(java.time.Duration.ofSeconds(10));
 				HttpRequest request = HttpRequest.newBuilder(URI.create(url))
 						.header("User-Agent", "Limitless-Updater")
 						.timeout(java.time.Duration.ofSeconds(90))
