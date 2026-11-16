@@ -9,7 +9,8 @@
 		"OptionsScreenMixin",
 		"MinecraftInitMixin",
 		"VideoScreenRedirectMixin",
-		"OptionsHintMixin"
+		"OptionsHintMixin",
+		"TitleScreenUpdateMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

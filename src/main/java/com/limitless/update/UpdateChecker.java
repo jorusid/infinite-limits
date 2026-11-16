@@ -175,6 +175,9 @@ public final class UpdateChecker {
 		} else {
 			status = Status.OUTDATED;
 		}
+		// 打一行日志，方便玩家/作者在 latest.log 里核对检查到底跑没跑、比出什么结果
+		LOGGER_INFO("远程版本 " + (latestVersion.isEmpty() ? "(未知)" : latestVersion)
+				+ "，当前 " + currentVersion() + " → " + (status == Status.OUTDATED ? "有新版本" : "已是最新"));
 	}
 
 	private static String normalize(String tag) {
