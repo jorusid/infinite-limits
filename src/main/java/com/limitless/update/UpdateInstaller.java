@@ -18,12 +18,13 @@ import java.util.function.Consumer;
 /**
  * 下载与「下次启动自动换新」。
  * <p>
- * 关键约束：JAR 一旦被加载器读进内存，Windows 就会给这个文件加独占锁——
- * <b>在游戏进程里既改不了它的名，也覆盖不了它的内容</b>。0.6.0/0.6.1 就是栽在这里：
- * 关闭钩子里 {@code Files.move(旧JAR, .disabled)} 必然抛 {@code AccessDeniedException}，
- * 异常被吞成一行日志，所以"下载成功、换版静默失效"。
+ * 关键约束（分平台）：<b>Windows</b> 上 JAR 一旦被加载器读进内存就会加独占锁——在游戏进程里
+ * 既改不了它的名，也覆盖不了它的内容（0.6.0/0.6.1 就是栽在这里：关闭钩子里
+ * {@code Files.move} 必然抛 {@code AccessDeniedException}，异常被吞成一行日志，所以
+ * "下载成功、换版静默失效"）。<b>macOS / Linux</b> 是 POSIX 语义，允许重命名甚至删除正被打开的文件，
+ * 进程内直接换即可。
  * <p>
- * 现在改成两步：
+ * Windows 走两步：
  * <ol>
  *     <li>新版先下到 {@code mods/.limitless-update/}（Fabric 只扫 mods 根目录，子目录不当模组）；</li>
  *     <li>退出时拉起一个 <b>脱离游戏进程的 cmd 助手</b>，它先轮询等游戏 PID 消失（锁随之释放），
@@ -166,18 +167,29 @@ public final class UpdateInstaller {
 			if (current == null || staged == null) {
 				return;
 			}
-			// 主路径：拉一个独立 cmd 进程，等本进程死透再动手
-			if (spawnHelper(current, staged)) {
+			// Windows：JAR 被加载器独占，进程内改不了名，只能交给脱离进程的 cmd 助手
+			if (isWindows() && spawnHelper(current, staged)) {
 				return;
 			}
-			// 兜底：助手拉不起来时才自己试（Windows 文件锁下多半失败，但失败的代价只是没换成）
+			// macOS / Linux：POSIX 允许重命名甚至删除「正被打开」的文件，直接换就行
 			applyDirect(current, staged);
 		} catch (Throwable t) {
 			LimitlessClient.LOGGER.warn("[Limitless] 换版准备失败（不影响下次启动）", t);
 		}
 	}
 
-	/** 直接在本进程里换：先改名再复制，复制失败则把旧 JAR 改回来，不留半截状态。 */
+	private static boolean isWindows() {
+		String os = System.getProperty("os.name", "");
+		return os.toLowerCase(java.util.Locale.ROOT).contains("win");
+	}
+
+	/**
+	 * 直接在本进程里换：先改名再复制，并核对新 JAR 的字节数，任何一步不对就回滚，
+	 * 保证不会留下「旧版已禁用、新版又没到位」的死局。
+	 * <p>
+	 * macOS/Linux 上这是主路径（POSIX 允许重命名被打开的文件）；Windows 上只在
+	 * cmd 助手拉不起来时才走到这里，通常改名就会失败，失败即放弃并由下次启动重试。
+	 */
 	private static void applyDirect(Path current, Path staged) {
 		Path disabled = current.resolveSibling(current.getFileName().toString() + ".disabled");
 		Path destination = modsDir().resolve(staged.getFileName());
@@ -188,15 +200,24 @@ public final class UpdateInstaller {
 			return;
 		}
 		try {
+			long expected = Files.size(staged);
 			Files.copy(staged, destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			long actual = Files.size(destination);
+			if (expected != actual) {
+				throw new IOException("新 JAR 字节数不符（期望 " + expected + "，实际 " + actual + "）");
+			}
 			Files.deleteIfExists(staged);
 			LimitlessClient.LOGGER.info("[Limitless] 已换版，下次启动加载 {}", destination.getFileName());
 		} catch (Throwable t) {
 			try {
+				Files.deleteIfExists(destination);
+			} catch (Throwable ignored) {
+			}
+			try {
 				Files.move(disabled, current, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 			} catch (Throwable ignored) {
 			}
-			LimitlessClient.LOGGER.warn("[Limitless] 换版复制失败，已回滚", t);
+			LimitlessClient.LOGGER.warn("[Limitless] 换版失败，已回滚，下次启动重试", t);
 		}
 	}
 

@@ -142,6 +142,20 @@
 
 下载：[Releases](https://github.com/jorusid/infinite-limits/releases)
 
+### 系统支持
+
+| 系统 | 支持情况 | 说明 |
+|---|---|---|
+| Windows 10 / 11 | ✅ 主要开发环境 | 自动换版靠一个 `cmd` 助手，等游戏进程退出后再替换 JAR |
+| macOS（Intel / Apple Silicon） | ✅ 无需额外依赖 | POSIX 允许重命名正被打开的文件，换版在游戏进程内直接完成，不调用 `cmd` |
+| Linux | ✅ | 同 macOS |
+
+各系统的游戏目录：Windows 是 `.minecraft/`，macOS 是 `~/Library/Application Support/minecraft/`，
+Linux 是 `~/.minecraft/`。模组生成的 `设置备份/`、`config/limitless.json` 都落在对应目录下。
+
+macOS 需要 **arm64 或 x64 的 JDK 25**（`brew install openjdk@25` 或从 [Adoptium](https://adoptium.net/) 下载），
+Fabric Loader 装到对应游戏目录即可。模组本身是纯 Java，没有任何原生库。
+
 ## 从源码构建
 
 ```bash
@@ -174,6 +188,7 @@
 | 0.6.0 | 启动时检查 GitHub 新版本，弹更新提示（立即下载 / 静默下载 / 暂不下载） |
 | 0.6.1 | 修复更新后配置重置：启动回填自定义值，配置改原子写入并留 `.bak` |
 | 0.6.2 | 修复更新换版不生效：改由独立 cmd 助手等游戏退出后再替换 JAR |
+| 0.6.3 | 自动换版按平台分流：Windows 走 cmd 助手，macOS / Linux 直接重命名 |
 
 ## 已知限制
 
@@ -185,6 +200,8 @@
 - **归类的局限**：分类依据是参数名关键字匹配，个别名字有歧义的可能归错桶。
 - **验证范围**：已在 Sodium 0.9.2 + 26.2 环境下进入游戏、打开界面验证；其余参数项的
   实际效果未逐项验证，极端值可能引起卡顿或崩溃，请配合备份功能使用。
+- **未在 macOS / Linux 实机跑过**：换版逻辑按 POSIX 语义编写（重命名被打开的文件是合法操作），
+  代码上不需要额外依赖，但没在真机上验证。真出问题只会是「这次没换成」，不会损坏游戏。
 
 ## 免责
 
