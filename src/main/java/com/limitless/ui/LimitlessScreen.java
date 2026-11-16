@@ -113,16 +113,23 @@ public class LimitlessScreen extends Screen {
 						b -> {
 							OptionMirror.apply(entry.option(), !Boolean.TRUE.equals(entry.option().get()));
 							b.setMessage(stateLabel(Boolean.TRUE.equals(entry.option().get())));
+							// 开关也记进覆盖账本，否则重装/换启动器后这项会回原版默认
+							LimitlessConfig cfg = LimitlessConfig.get();
+							cfg.setOverride(entry.key(), String.valueOf(entry.option().get()));
+							cfg.save();
 						}).bounds(this.width - 8 - boxWidth, y, boxWidth, 18).build();
 				this.addRenderableWidget(button);
 			} else if (value instanceof Number) {
 				EditBox box = new EditBox(this.font, this.width - 8 - boxWidth, y, boxWidth, 18, I18n.tr("screen.valueBox"));
 				box.setValue(trim(value));
+				final String key = entry.key();
 				box.setResponder(text -> {
 					Object parsed = OptionMirror.parse(entry.option(), text);
 					if (parsed != null) {
 						OptionMirror.apply(entry.option(), parsed);
-						LimitlessConfig.get().setOverride(entry.key(), text.trim());
+						LimitlessConfig.get().setOverride(key, text.trim());
+						// 每次键入都立刻落盘（已改为原子写入），崩溃也不丢
+						LimitlessConfig.get().save();
 					}
 				});
 				this.addRenderableWidget(box);
