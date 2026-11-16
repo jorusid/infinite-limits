@@ -36,7 +36,14 @@ public final class UpdateChecker {
 	}
 
 	private static final String API_URL = "https://api.github.com/repos/jorusid/infinite-limits/releases/latest";
-	private static final long CACHE_MILLIS = 6L * 60L * 60L * 1000L;
+	/**
+	 * 两次检查之间的最小间隔。
+	 * <p>
+	 * 原来是 6 小时：期间发的版本会被缓存挡住，玩家要等半天才看得到提示
+	 * （0.6.6 时就出现过「明明发了新版，检查却说已是最新」）。现在压到 60 秒——
+	 * 正常每次启动都真打一次接口，只有连续重启才会走缓存。
+	 */
+	private static final long CACHE_MILLIS = 60L * 1000L;
 
 	private static volatile Status status = Status.UNKNOWN;
 	private static volatile String latestVersion = "";
@@ -100,8 +107,9 @@ public final class UpdateChecker {
 			LimitlessConfig cfg = LimitlessConfig.get();
 			long now = System.currentTimeMillis();
 
-			// 缓存命中：直接用上次的结果，不打接口
+			// 缓存命中：直接用上次的结果，不打接口（只在 60 秒内连续启动时发生）
 			if (!cfg.lastKnownLatest.isEmpty() && now - cfg.lastUpdateCheck < CACHE_MILLIS) {
+				LOGGER_INFO("检查走缓存（" + (now - cfg.lastUpdateCheck) / 1000 + " 秒前的记录）");
 				applyResult(cfg.lastKnownLatest, cfg.lastKnownJarUrl, cfg.lastKnownPageUrl);
 				checkedAt = cfg.lastUpdateCheck;
 				return;
