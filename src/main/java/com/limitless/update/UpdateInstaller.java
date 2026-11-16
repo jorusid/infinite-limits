@@ -9,26 +9,33 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.util.Comparator;
 import java.util.function.Consumer;
 
 /**
  * 下载与「下次启动自动换新」。
  * <p>
- * 关键约束：JAR 一旦被加载器读进内存，就不能再热替换——而且这版 JAR 的资源（语言文件、图标）
- * 在游戏运行期间还会被随手读，所以运行中动它的文件名是不安全的。
+ * 关键约束：JAR 一旦被加载器读进内存，Windows 就会给这个文件加独占锁——
+ * <b>在游戏进程里既改不了它的名，也覆盖不了它的内容</b>。0.6.0/0.6.1 就是栽在这里：
+ * 关闭钩子里 {@code Files.move(旧JAR, .disabled)} 必然抛 {@code AccessDeniedException}，
+ * 异常被吞成一行日志，所以"下载成功、换版静默失效"。
  * <p>
- * 因此走「暂存 + 退出时换」：新 JAR 先下到 {@code mods/.limitless-update/}（Fabric 只扫 mods 根目录，
- * 子目录不会被当成模组加载，所以放这儿不会造成两个同 ID 模组冲突）；然后在 JVM 关闭钩子里把旧 JAR
- * 改名成 {@code .disabled}、把暂存的 JAR 挪进 mods。下次启动加载的就是新版本。
- * <p>
+ * 现在改成两步：
+ * <ol>
+ *     <li>新版先下到 {@code mods/.limitless-update/}（Fabric 只扫 mods 根目录，子目录不当模组）；</li>
+ *     <li>退出时拉起一个 <b>脱离游戏进程的 cmd 助手</b>，它先轮询等游戏 PID 消失（锁随之释放），
+ *     再做「旧 JAR 改名 .disabled → 新 JAR 复制进 mods → 删暂存」。助手是独立进程，
+ *     游戏退出不影响它；即使它没跑成，下次启动会检测到暂存 JAR 还在，自动重新挂一次。</li>
+ * </ol>
  * 任何一步失败都只是「这次没换成」，不会让游戏起不来。
  */
 public final class UpdateInstaller {
+	private static final String STAGING = ".limitless-update";
+	private static final String LOG_NAME = "apply.log";
+
 	private static boolean armed = false;
 
 	private UpdateInstaller() {
@@ -39,11 +46,29 @@ public final class UpdateInstaller {
 	}
 
 	public static Path stagingDir() {
-		return modsDir().resolve(".limitless-update");
+		return modsDir().resolve(STAGING);
 	}
 
-	/** 启动时清理上次换版留下的 {@code *.jar.disabled}，顺手把暂存目录里没用的东西删掉。 */
+	/**
+	 * 启动时：先读上次换版助手留下的日志（成功/失败一目了然），再清理 {@code *.jar.disabled}；
+	 * 如果暂存目录里还有没换成的 JAR，就重新挂上退出钩子，本次退出再试一次。
+	 */
 	public static void cleanupAfterApply() {
+		Path log = stagingDir().resolve(LOG_NAME);
+		if (Files.exists(log)) {
+			try {
+				String text = new String(Files.readAllBytes(log), StandardCharsets.UTF_8).trim();
+				LimitlessClient.LOGGER.info("[Limitless] 上次换版助手返回: {}",
+						text.isEmpty() ? "(空)" : text.replace("\r", "").replace("\n", " | "));
+			} catch (Throwable ignored) {
+				// 日志读不出来不影响任何事
+			}
+			try {
+				Files.deleteIfExists(log);
+			} catch (IOException ignored) {
+			}
+		}
+
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(modsDir(), "limitless-*.jar.disabled")) {
 			for (Path path : stream) {
 				try {
@@ -55,6 +80,11 @@ public final class UpdateInstaller {
 			}
 		} catch (IOException ignored) {
 			// mods 目录读不了：不处理
+		}
+
+		if (hasStagedUpdate()) {
+			LimitlessClient.LOGGER.warn("[Limitless] 暂存目录里还有没换成的版本，本次退出时再试一次");
+			arm();
 		}
 	}
 
@@ -73,12 +103,12 @@ public final class UpdateInstaller {
 				temp = stagingDir().resolve("limitless-" + version + ".jar.tmp");
 
 				HttpClient client = HttpClient.newBuilder()
-						.connectTimeout(Duration.ofSeconds(10))
+						.connectTimeout(java.time.Duration.ofSeconds(10))
 						.followRedirects(HttpClient.Redirect.NORMAL)
 						.build();
 				HttpRequest request = HttpRequest.newBuilder(URI.create(url))
 						.header("User-Agent", "Limitless-Updater")
-						.timeout(Duration.ofSeconds(90))
+						.timeout(java.time.Duration.ofSeconds(90))
 						.GET()
 						.build();
 				HttpResponse<Path> response = client.send(request, HttpResponse.BodyHandlers.ofFile(temp));
@@ -117,7 +147,7 @@ public final class UpdateInstaller {
 		}
 	}
 
-	/** 注册退出钩子：关游戏时把版本换掉。多次调用只注册一次。 */
+	/** 注册退出钩子。多次调用只注册一次。 */
 	public static synchronized void arm() {
 		if (armed) {
 			return;
@@ -136,19 +166,97 @@ public final class UpdateInstaller {
 			if (current == null || staged == null) {
 				return;
 			}
-			Path disabled = current.resolveSibling(current.getFileName().toString() + ".disabled");
+			// 主路径：拉一个独立 cmd 进程，等本进程死透再动手
+			if (spawnHelper(current, staged)) {
+				return;
+			}
+			// 兜底：助手拉不起来时才自己试（Windows 文件锁下多半失败，但失败的代价只是没换成）
+			applyDirect(current, staged);
+		} catch (Throwable t) {
+			LimitlessClient.LOGGER.warn("[Limitless] 换版准备失败（不影响下次启动）", t);
+		}
+	}
+
+	/** 直接在本进程里换：先改名再复制，复制失败则把旧 JAR 改回来，不留半截状态。 */
+	private static void applyDirect(Path current, Path staged) {
+		Path disabled = current.resolveSibling(current.getFileName().toString() + ".disabled");
+		Path destination = modsDir().resolve(staged.getFileName());
+		try {
 			Files.move(current, disabled, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-			Path destination = modsDir().resolve(staged.getFileName());
+		} catch (Throwable t) {
+			LimitlessClient.LOGGER.warn("[Limitless] 旧 JAR 改名失败（文件被占用，交给下次启动重试）: {}", t.toString());
+			return;
+		}
+		try {
 			Files.copy(staged, destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 			Files.deleteIfExists(staged);
-			try (DirectoryStream<Path> leftovers = Files.newDirectoryStream(stagingDir(), "*.tmp")) {
-				for (Path leftover : leftovers) {
-					Files.deleteIfExists(leftover);
-				}
-			}
 			LimitlessClient.LOGGER.info("[Limitless] 已换版，下次启动加载 {}", destination.getFileName());
 		} catch (Throwable t) {
-			LimitlessClient.LOGGER.warn("[Limitless] 换版失败（不影响下次启动）", t);
+			try {
+				Files.move(disabled, current, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			} catch (Throwable ignored) {
+			}
+			LimitlessClient.LOGGER.warn("[Limitless] 换版复制失败，已回滚", t);
+		}
+	}
+
+	/**
+	 * 拉起脱离游戏进程的 cmd 助手。
+	 * <p>
+	 * 助手脚本里 <b>只用相对路径和 ASCII 文件名</b>：工作目录设成 mods，所以脚本正文里
+	 * 一个中文或绝对路径都不出现，彻底绕开批处理文件的编码坑。
+	 */
+	private static boolean spawnHelper(Path current, Path staged) {
+		try {
+			String oldName = current.getFileName().toString();
+			String newName = staged.getFileName().toString();
+			String pid = String.valueOf(ProcessHandle.current().pid());
+
+			Path bat = Path.of(System.getProperty("java.io.tmpdir"))
+					.resolve("limitless-apply-" + System.currentTimeMillis() + ".bat");
+
+			String log = STAGING + "\\" + LOG_NAME;
+			String stagedRel = STAGING + "\\" + newName;
+
+			String script = String.join("\r\n",
+					"@echo off",
+					"setlocal enabledelayedexpansion",
+					"set n=0",
+					":wait",
+					"tasklist /FI \"PID eq " + pid + "\" 2>nul | find \"" + pid + "\" >nul",
+					"if errorlevel 1 goto apply",
+					"set /a n+=1",
+					"if !n! GEQ 90 goto apply",
+					"ping -n 2 127.0.0.1 >nul",
+					"goto wait",
+					":apply",
+					"move /Y \"" + oldName + "\" \"" + oldName + ".disabled\" > \"" + log + "\" 2>&1",
+					"if errorlevel 1 goto failmove",
+					"copy /Y \"" + stagedRel + "\" \"" + newName + "\" >> \"" + log + "\" 2>&1",
+					"if errorlevel 1 goto failcopy",
+					"del /F /Q \"" + stagedRel + "\" >> \"" + log + "\" 2>&1",
+					"echo OK >> \"" + log + "\"",
+					"goto end",
+					":failmove",
+					"echo MOVE-FAILED >> \"" + log + "\"",
+					"goto end",
+					":failcopy",
+					"echo COPY-FAILED >> \"" + log + "\"",
+					":end",
+					"del /F /Q \"%~f0\" >nul 2>&1",
+					"");
+
+			Files.write(bat, script.getBytes(StandardCharsets.US_ASCII));
+			ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", bat.toString());
+			pb.directory(modsDir().toFile());
+			pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+			pb.redirectErrorStream(true);
+			pb.start();
+			LimitlessClient.LOGGER.info("[Limitless] 已挂上换版助手，退出游戏后自动替换 JAR");
+			return true;
+		} catch (Throwable t) {
+			LimitlessClient.LOGGER.warn("[Limitless] 换版助手启动失败", t);
+			return false;
 		}
 	}
 
@@ -185,27 +293,5 @@ public final class UpdateInstaller {
 	public static boolean hasStagedUpdate() {
 		Path staged = newestStagedJar();
 		return staged != null && Files.exists(staged);
-	}
-
-	static {
-		// 保证关闭时尽量不残留临时文件；不主动删已换好的 JAR
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			try {
-				if (!Files.exists(stagingDir())) {
-					return;
-				}
-				try (var stream = Files.list(stagingDir())) {
-					stream.sorted(Comparator.reverseOrder()).forEach(path -> {
-						try {
-							if (path.getFileName().toString().endsWith(".tmp")) {
-								Files.deleteIfExists(path);
-							}
-						} catch (IOException ignored) {
-						}
-					});
-				}
-			} catch (Throwable ignored) {
-			}
-		}, "Limitless-Update-Cleanup"));
 	}
 }
