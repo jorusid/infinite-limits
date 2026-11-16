@@ -50,5 +50,12 @@
 	"update.done.silent": "Downloaded. It will load automatically on the next launch.",
 	"update.failed": "Download failed: %s",
 	"update.failed.hint": "You can keep playing; download it later with the GitHub button in the mod screen.",
-	"update.close": "Close"
+	"update.close": "Close",
+	"limitless.redirect.vanilla": "Open vanilla video settings (risky)",
+	"limitless.warning.vanilla.title": "Warning",
+	"limitless.warning.vanilla.line1": "Opening vanilla video settings may invalidate the values you set in this mod.",
+	"limitless.warning.vanilla.line2": "The vanilla screen re-validates and re-saves against vanilla ranges, so out-of-range values can be reset.",
+	"limitless.warning.vanilla.line3": "To keep your current values, press \"Back to mod menu\" below.",
+	"limitless.warning.vanilla.confirm": "Open vanilla anyway",
+	"limitless.warning.vanilla.back": "Back to mod menu"
 }

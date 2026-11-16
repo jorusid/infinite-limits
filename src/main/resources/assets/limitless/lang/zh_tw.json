@@ -50,5 +50,12 @@
 	"update.done.silent": "已下載。下次啟動遊戲時自動載入新版本。",
 	"update.failed": "下載失敗：%s",
 	"update.failed.hint": "可以先繼續玩，之後在模組介面左下的 GitHub 按鈕手動下載。",
-	"update.close": "關閉"
+	"update.close": "關閉",
+	"limitless.redirect.vanilla": "開啟原版影片設定（有風險）",
+	"limitless.warning.vanilla.title": "警告",
+	"limitless.warning.vanilla.line1": "開啟原版影片設定可能導致你在模組裡改的數值失效。",
+	"limitless.warning.vanilla.line2": "原版頁面儲存時會按原版範圍重新校驗，超出範圍的值會被重置。",
+	"limitless.warning.vanilla.line3": "想保留目前數值，請點下面的「返回 mod 選單」。",
+	"limitless.warning.vanilla.confirm": "確認開啟原版",
+	"limitless.warning.vanilla.back": "返回 mod 選單"
 }
