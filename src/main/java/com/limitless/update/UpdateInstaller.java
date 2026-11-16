@@ -38,6 +38,7 @@ public final class UpdateInstaller {
 	private static final String LOG_NAME = "apply.log";
 
 	private static boolean armed = false;
+	private static boolean helperSpawned = false;
 
 	private UpdateInstaller() {
 	}
@@ -84,9 +85,53 @@ public final class UpdateInstaller {
 		}
 
 		if (hasStagedUpdate()) {
-			LimitlessClient.LOGGER.warn("[Limitless] 暂存目录里还有没换成的版本，本次退出时再试一次");
-			arm();
+			LimitlessClient.LOGGER.warn("[Limitless] 暂存目录里还有没换成的版本，现在重新挂上换版助手");
+			applyNowOrSoon(currentJar(), newestStagedJar());
 		}
+	}
+
+	/**
+	 * 立刻安排换版，<b>不依赖 JVM 关闭钩子</b>。
+	 * <p>
+	 * 0.6.10 及以前是在关闭钩子里拉起助手，结果撞上 FastQuit 这类「退出时直接终止进程、
+	 * 不跑关闭钩子」的优化模组，钩子根本没执行，日志里连「已挂上换版助手」都没有，
+	 * 于是出现「下载成功但版本没变」。现在改成下载完就拉助手、启动时发现残留也立刻拉：
+	 * 助手自己轮询等游戏 PID 消失，跟游戏怎么退出无关。
+	 */
+	private static void applyNowOrSoon(Path current, Path staged) {
+		if (current == null || staged == null) {
+			return;
+		}
+		// 暂存件必须比当前版本新，否则（比如玩家手动装了更新版、旧暂存件还留着）不能拿它顶掉现版本
+		String stagedVersion = versionOf(staged);
+		String currentVersion = UpdateChecker.currentVersion();
+		if (!stagedVersion.isEmpty() && UpdateChecker.compare(stagedVersion, currentVersion) <= 0) {
+			try {
+				Files.deleteIfExists(staged);
+				LimitlessClient.LOGGER.info("[Limitless] 丢弃过期暂存件 {}（当前已是 {}）",
+						staged.getFileName(), currentVersion);
+			} catch (IOException ignored) {
+			}
+			return;
+		}
+		try {
+			if (isWindows()) {
+				spawnHelper(current, staged);
+				return;
+			}
+			applyDirect(current, staged);
+		} catch (Throwable t) {
+			LimitlessClient.LOGGER.warn("[Limitless] 安排换版失败（下次启动再试）", t);
+		}
+	}
+
+	/** 从 limitless-x.y.z.jar 里取出 x.y.z；取不到返回空串。 */
+	private static String versionOf(Path jar) {
+		String name = jar.getFileName().toString();
+		if (name.startsWith("limitless-") && name.endsWith(".jar")) {
+			return name.substring("limitless-".length(), name.length() - ".jar".length());
+		}
+		return "";
 	}
 
 	/**
@@ -119,6 +164,8 @@ public final class UpdateInstaller {
 				}
 				Files.move(temp, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 				LimitlessClient.LOGGER.info("[Limitless] 新版已暂存: {}（{} 字节）", target.getFileName(), size);
+				// 立刻安排换版：助手会自己等游戏退出，不依赖关闭钩子
+				applyNowOrSoon(currentJar(), target);
 				arm();
 				clientExecute(onSuccess);
 			} catch (Throwable t) {
@@ -224,7 +271,10 @@ public final class UpdateInstaller {
 	 * 助手脚本里 <b>只用相对路径和 ASCII 文件名</b>：工作目录设成 mods，所以脚本正文里
 	 * 一个中文或绝对路径都不出现，彻底绕开批处理文件的编码坑。
 	 */
-	private static boolean spawnHelper(Path current, Path staged) {
+	private static synchronized boolean spawnHelper(Path current, Path staged) {
+		if (helperSpawned) {
+			return true;
+		}
 		try {
 			String oldName = current.getFileName().toString();
 			String newName = staged.getFileName().toString();
@@ -244,12 +294,19 @@ public final class UpdateInstaller {
 					"tasklist /FI \"PID eq " + pid + "\" 2>nul | find \"" + pid + "\" >nul",
 					"if errorlevel 1 goto apply",
 					"set /a n+=1",
-					"if !n! GEQ 90 goto apply",
+					"if !n! GEQ 5400 goto timeout",
 					"ping -n 2 127.0.0.1 >nul",
 					"goto wait",
 					":apply",
+					"set t=0",
+					":retry",
 					"move /Y \"" + oldName + "\" \"" + oldName + ".disabled\" > \"" + log + "\" 2>&1",
-					"if errorlevel 1 goto failmove",
+					"if not errorlevel 1 goto copystep",
+					"set /a t+=1",
+					"if !t! GEQ 20 goto failmove",
+					"ping -n 3 127.0.0.1 >nul",
+					"goto retry",
+					":copystep",
 					"copy /Y \"" + stagedRel + "\" \"" + newName + "\" >> \"" + log + "\" 2>&1",
 					"if errorlevel 1 goto failcopy",
 					"del /F /Q \"" + stagedRel + "\" >> \"" + log + "\" 2>&1",
@@ -260,6 +317,9 @@ public final class UpdateInstaller {
 					"goto end",
 					":failcopy",
 					"echo COPY-FAILED >> \"" + log + "\"",
+					"goto end",
+					":timeout",
+					"echo TIMEOUT >> \"" + log + "\"",
 					":end",
 					"del /F /Q \"%~f0\" >nul 2>&1",
 					"");
@@ -270,7 +330,8 @@ public final class UpdateInstaller {
 			pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
 			pb.redirectErrorStream(true);
 			pb.start();
-			LimitlessClient.LOGGER.info("[Limitless] 已挂上换版助手，退出游戏后自动替换 JAR");
+			helperSpawned = true;
+			LimitlessClient.LOGGER.info("[Limitless] 已拉起换版助手（PID {}），游戏退出后自动替换 JAR", pid);
 			return true;
 		} catch (Throwable t) {
 			LimitlessClient.LOGGER.warn("[Limitless] 换版助手启动失败", t);
