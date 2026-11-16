@@ -9,6 +9,7 @@
 	],
 	"license": "All Rights Reserved",
 	"environment": "client",
+	"icon": "assets/limitless/icon.png",
 	"entrypoints": {
 		"client": [
 			"com.limitless.LimitlessClient"

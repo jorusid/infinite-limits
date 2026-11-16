@@ -2,6 +2,12 @@
 
 本模组的版本变更记录，按版本倒序。安装包见 [Releases](../../releases)。
 
+## 0.5.6
+
+- 新增模组图标：方块化的 ∞ 徽标，Fabric 模组列表、Modrinth 与 CurseForge 共用同一张图
+- README 首屏加「原版上限 vs 装上之后」对照表，明确写出「允许原样收录进整合包」
+- 修正安装说明里的 JAR 文件名（旧文档误写作 `infinite-limits-<版本>.jar`，实际是 `limitless-<版本>.jar`）
+
 ## 0.5.5
 
 - 新增多语言系统：`com.limitless.i18n.I18n` 统一走 `Component.translatable`，
