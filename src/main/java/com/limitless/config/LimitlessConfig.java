@@ -38,6 +38,17 @@ public final class LimitlessConfig {
 	/** 最近一次的备份目录名。 */
 	public String backupFolder = "";
 
+	/** 玩家点了「暂不下载」的那个版本号，这一版不再提示。 */
+	public String skippedVersion = "";
+
+	/** 上次检查更新的时间戳（毫秒），用于缓存，避免每次启动都打 GitHub 接口。 */
+	public long lastUpdateCheck = 0L;
+
+	/** 上次查到的版本号 / JAR 地址 / 发布页地址（缓存用）。 */
+	public String lastKnownLatest = "";
+	public String lastKnownJarUrl = "";
+	public String lastKnownPageUrl = "";
+
 	public static LimitlessConfig get() {
 		if (instance == null) {
 			instance = load();
@@ -58,6 +69,12 @@ public final class LimitlessConfig {
 				if (loaded != null) {
 					if (loaded.keepKeys == null) loaded.keepKeys = new ArrayList<>();
 					if (loaded.overrides == null) loaded.overrides = new LinkedHashMap<>();
+					// 旧配置文件里没有更新相关字段，Gson 会留 null，字符串一律兜成空串
+					if (loaded.backupFolder == null) loaded.backupFolder = "";
+					if (loaded.skippedVersion == null) loaded.skippedVersion = "";
+					if (loaded.lastKnownLatest == null) loaded.lastKnownLatest = "";
+					if (loaded.lastKnownJarUrl == null) loaded.lastKnownJarUrl = "";
+					if (loaded.lastKnownPageUrl == null) loaded.lastKnownPageUrl = "";
 					return loaded;
 				}
 			} catch (Exception e) {

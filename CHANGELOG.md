@@ -2,6 +2,16 @@
 
 本模组的版本变更记录，按版本倒序。安装包见 [Releases](../../releases)。
 
+## 0.6.0
+
+- 新增启动时更新检查：后台查 `api.github.com` 的最新 Release，有新版本时主菜单弹出提示
+- 三个选项：立即下载 / 静默下载（下次启动自动加载）/ 暂不下载（这一版不再提示）
+- 下载走暂存目录 `mods/.limitless-update/`，退出时在关闭钩子里换掉旧 JAR（改名为 `.jar.disabled`），
+  下次启动生效；运行中不动正在使用的 JAR
+- 检查结果缓存 6 小时；断网、超时、接口限流、JSON 异常一律当作"无更新"，不阻塞进游戏
+- `config/limitless.json` 新增 `skippedVersion`、`lastUpdateCheck`、`lastKnown*` 字段，
+  旧配置文件缺字段时自动兜成空串
+
 ## 0.5.6
 
 - 新增模组图标：方块化的 ∞ 徽标，Fabric 模组列表、Modrinth 与 CurseForge 共用同一张图
