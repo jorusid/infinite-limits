@@ -40,6 +40,11 @@ public abstract class OptionsHintMixin {
 	@Inject(method = "addContents", at = @At("TAIL"))
 	private void limitless$replaceWithHint(CallbackInfo ci) {
 		try {
+			// 玩家从模组菜单点「原版设置」进来的：整棵原版设置树都保持原样，
+			// 音频 / 聊天 / 鼠标 / 辅助功能这些页该有的条目一个都不能少
+			if (com.limitless.compat.VideoRedirect.inVanillaTree()) {
+				return;
+			}
 			if (this.list == null) {
 				return;
 			}
