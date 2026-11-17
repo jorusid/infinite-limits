@@ -85,8 +85,28 @@ public final class UpdateInstaller {
 		}
 
 		if (hasStagedUpdate()) {
+			pruneOldStaged();
 			LimitlessClient.LOGGER.warn("[Limitless] 暂存目录里还有没换成的版本，现在重新挂上换版助手");
 			applyNowOrSoon(currentJar(), newestStagedJar());
+		}
+	}
+
+	/** 暂存目录里只留最新的那一份，避免攒一堆旧包。 */
+	private static void pruneOldStaged() {
+		Path newest = newestStagedJar();
+		if (newest == null) {
+			return;
+		}
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(stagingDir(), "limitless-*.jar")) {
+			for (Path path : stream) {
+				if (!path.equals(newest)) {
+					try {
+						Files.deleteIfExists(path);
+					} catch (IOException ignored) {
+					}
+				}
+			}
+		} catch (IOException ignored) {
 		}
 	}
 
@@ -100,6 +120,8 @@ public final class UpdateInstaller {
 	 */
 	private static void applyNowOrSoon(Path current, Path staged) {
 		if (current == null || staged == null) {
+			// 必须留痕：这里静默返回过一次，导致「下载好了但永远不换」查了很久
+			LimitlessClient.LOGGER.warn("[Limitless] 跳过换版：定位不到 JAR（当前={}，暂存={}）", current, staged);
 			return;
 		}
 		// 暂存件必须比当前版本新，否则（比如玩家手动装了更新版、旧暂存件还留着）不能拿它顶掉现版本
@@ -289,6 +311,7 @@ public final class UpdateInstaller {
 			String script = String.join("\r\n",
 					"@echo off",
 					"setlocal enabledelayedexpansion",
+					"echo START >> \"" + log + "\"",
 					"set n=0",
 					":wait",
 					"tasklist /FI \"PID eq " + pid + "\" 2>nul | find \"" + pid + "\" >nul",
@@ -339,13 +362,44 @@ public final class UpdateInstaller {
 		}
 	}
 
-	/** 当前加载的 JAR 文件位置；开发环境下是目录，返回 null 即不换版。 */
+	/**
+	 * 当前加载的 JAR 文件位置。
+	 * <p>
+	 * 先问加载器要根路径；26.2 的 Fabric 有时拿不到（{@code getRootPaths()} 可能给的是目录或
+	 * 者被 remap 后的临时路径），这时退回「扫 mods 目录找同名版本」——这一步是 0.6.12
+	 * 「下载成功但从不换版」的真因：老代码只问加载器，拿不到就返回 null，而上层静默返回。
+	 */
 	private static Path currentJar() {
-		return FabricLoader.getInstance().getModContainer(LimitlessClient.MOD_ID)
+		Path fromLoader = FabricLoader.getInstance().getModContainer(LimitlessClient.MOD_ID)
 				.flatMap(container -> container.getRootPaths().stream()
 						.filter(path -> path.toString().endsWith(".jar"))
+						.map(Path::toAbsolutePath)
+						.filter(Files::isRegularFile)
 						.findFirst())
 				.orElse(null);
+		if (fromLoader != null) {
+			return fromLoader;
+		}
+
+		String current = UpdateChecker.currentVersion();
+		Path best = null;
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(modsDir(), "limitless-*.jar")) {
+			for (Path path : stream) {
+				if (!Files.isRegularFile(path)) {
+					continue;
+				}
+				if (versionOf(path).equals(current)) {
+					return path;
+				}
+				best = path;
+			}
+		} catch (IOException ignored) {
+			// mods 目录读不了就只能放弃
+		}
+		if (best != null) {
+			LimitlessClient.LOGGER.info("[Limitless] 加载器未给出 JAR 路径，改按文件名定位到 {}", best.getFileName());
+		}
+		return best;
 	}
 
 	private static Path newestStagedJar() {
