@@ -34,6 +34,14 @@ public abstract class VideoScreenRedirectMixin {
 			return;
 		}
 		if (screen instanceof LimitlessScreen) {
+			// 回到模组自己的界面，说明已经离开原版设置树了
+			VideoRedirect.exitVanillaTree();
+			return;
+		}
+
+		// 已经在原版设置树里（玩家从模组菜单点了「原版设置」），整棵子树都不接管，
+		// 否则会出现「原版设置里再点视频设置又被拦回模组界面」这种自相矛盾的行为
+		if (VideoRedirect.inVanillaTree()) {
 			return;
 		}
 

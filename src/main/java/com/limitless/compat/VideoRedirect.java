@@ -35,6 +35,8 @@ public final class VideoRedirect {
 	}
 
 	private static boolean bypass = false;
+	/** 是否处在「原版设置树」里（从模组菜单的原版设置按钮进来，含它下面的所有子页）。 */
+	private static boolean vanillaTree = false;
 	private static final List<Captured> captured = new ArrayList<>();
 
 	private VideoRedirect() {
@@ -43,6 +45,20 @@ public final class VideoRedirect {
 	/** 当前是否处于「主动放行」状态。 */
 	public static boolean isBypass() {
 		return bypass;
+	}
+
+	/** 进入原版设置树：从这里往下走的页面一律不接管，直到回到模组自己的界面。 */
+	public static void enterVanillaTree() {
+		vanillaTree = true;
+	}
+
+	/** 离开原版设置树（回到模组界面时调用）。 */
+	public static void exitVanillaTree() {
+		vanillaTree = false;
+	}
+
+	public static boolean inVanillaTree() {
+		return vanillaTree;
 	}
 
 	/** 记录一次拦截：同一来源替换旧实例，不同来源追加。 */

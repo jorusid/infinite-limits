@@ -251,8 +251,12 @@ public class LimitlessScreen extends Screen {
 				.bounds(videoX, rowBottom, 100, 20).build());
 
 		// 版本号左边：直接进原版设置主页（不是视频设置页）
+		// 进去后整棵原版设置树都不接管，玩家在里面点「视频设置」看到的就是原版页面
 		this.addRenderableWidget(Button.builder(I18n.tr("button.vanillaOptions"),
-				b -> this.minecraft.gui.setScreen(new OptionsScreen(this, this.minecraft.options, false)))
+				b -> {
+					com.limitless.compat.VideoRedirect.enterVanillaTree();
+					this.minecraft.gui.setScreen(new OptionsScreen(this, this.minecraft.options, false));
+				})
 				.bounds(this.width / 2 - 160, this.height - 20, 84, 16).build());
 
 		// 版本号右边紧挨着：伴侣模组入口，点开是链接页
