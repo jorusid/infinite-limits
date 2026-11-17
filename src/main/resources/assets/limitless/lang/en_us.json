@@ -58,5 +58,12 @@
 	"limitless.warning.vanilla.line3": "To keep your current values, press \"Back to mod menu\" below.",
 	"limitless.warning.vanilla.confirm": "Open vanilla anyway",
 	"limitless.warning.vanilla.back": "Back to mod menu",
-	"limitless.screen.version": "Infinite Limitless v%s"
+	"limitless.screen.version": "Infinite Limitless v%s",
+	"limitless.button.companion": "Companions",
+	"limitless.companion.title": "Companion Mods",
+	"limitless.companion.hint": "Other mods from the same series; press the button to open its repository",
+	"limitless.companion.open": "Open",
+	"limitless.companion.back": "Back",
+	"limitless.companion.world.name": "Custom World",
+	"limitless.companion.world.desc": "Adjust world generation per dimension: Overworld, Nether and The End"
 }

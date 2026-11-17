@@ -58,5 +58,12 @@
 	"limitless.warning.vanilla.line3": "想保留当前数值，请点下面的「返回 mod 菜单」。",
 	"limitless.warning.vanilla.confirm": "确认打开原版",
 	"limitless.warning.vanilla.back": "返回 mod 菜单",
-	"limitless.screen.version": "无限 Limitless v%s"
+	"limitless.screen.version": "无限 Limitless v%s",
+	"limitless.button.companion": "伴侣模组",
+	"limitless.companion.title": "伴侣模组",
+	"limitless.companion.hint": "同系列的其他模组，点击右侧按钮前往仓库",
+	"limitless.companion.open": "前往",
+	"limitless.companion.back": "返回",
+	"limitless.companion.world.name": "自定义世界生成",
+	"limitless.companion.world.desc": "主世界/下界/末地三维度分开调世界生成参数"
 }

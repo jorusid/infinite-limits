@@ -58,5 +58,12 @@
 	"limitless.warning.vanilla.line3": "想保留目前數值，請點下面的「返回 mod 選單」。",
 	"limitless.warning.vanilla.confirm": "確認開啟原版",
 	"limitless.warning.vanilla.back": "返回 mod 選單",
-	"limitless.screen.version": "無限 Limitless v%s"
+	"limitless.screen.version": "無限 Limitless v%s",
+	"limitless.button.companion": "伴侶模組",
+	"limitless.companion.title": "伴侶模組",
+	"limitless.companion.hint": "同系列的其他模組，點擊右側按鈕前往倉庫",
+	"limitless.companion.open": "前往",
+	"limitless.companion.back": "返回",
+	"limitless.companion.world.name": "自訂世界生成",
+	"limitless.companion.world.desc": "主世界/地獄/終界三維度分開調整世界生成參數"
 }

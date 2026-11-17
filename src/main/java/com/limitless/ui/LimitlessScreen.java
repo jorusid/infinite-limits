@@ -249,6 +249,11 @@ public class LimitlessScreen extends Screen {
 				b -> this.minecraft.gui.setScreen(new VideoRedirectScreen(this)))
 				.bounds(videoX, rowBottom, 100, 20).build());
 
+		// 版本号右边紧挨着：伴侣模组入口，点开是链接页
+		this.addRenderableWidget(Button.builder(I18n.tr("button.companion"),
+				b -> this.minecraft.gui.setScreen(new CompanionScreen(this)))
+				.bounds(this.width / 2 + 76, this.height - 20, 84, 16).build());
+
 		if (status.isEmpty() && newestBackup != null) {
 			status = I18n.trs("status.latestBackup", newestBackup.getFileName().toString());
 		}
