@@ -13,6 +13,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.network.chat.Component;
 
 import java.nio.file.Path;
@@ -248,6 +249,11 @@ public class LimitlessScreen extends Screen {
 		this.addRenderableWidget(Button.builder(I18n.tr("button.video"),
 				b -> this.minecraft.gui.setScreen(new VideoRedirectScreen(this)))
 				.bounds(videoX, rowBottom, 100, 20).build());
+
+		// 版本号左边：直接进原版设置主页（不是视频设置页）
+		this.addRenderableWidget(Button.builder(I18n.tr("button.vanillaOptions"),
+				b -> this.minecraft.gui.setScreen(new OptionsScreen(this, this.minecraft.options, false)))
+				.bounds(this.width / 2 - 160, this.height - 20, 84, 16).build());
 
 		// 版本号右边紧挨着：伴侣模组入口，点开是链接页
 		this.addRenderableWidget(Button.builder(I18n.tr("button.companion"),

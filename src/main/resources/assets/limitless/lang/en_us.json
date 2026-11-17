@@ -59,6 +59,7 @@
 	"limitless.warning.vanilla.confirm": "Open vanilla anyway",
 	"limitless.warning.vanilla.back": "Back to mod menu",
 	"limitless.screen.version": "Infinite Limitless v%s",
+	"limitless.button.vanillaOptions": "Vanilla Options",
 	"limitless.button.companion": "Companions",
 	"limitless.companion.title": "Companion Mods",
 	"limitless.companion.hint": "Other mods from the same series; press the button to open its repository",

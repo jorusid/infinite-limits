@@ -59,6 +59,7 @@
 	"limitless.warning.vanilla.confirm": "確認開啟原版",
 	"limitless.warning.vanilla.back": "返回 mod 選單",
 	"limitless.screen.version": "無限 Limitless v%s",
+	"limitless.button.vanillaOptions": "原版設定",
 	"limitless.button.companion": "伴侶模組",
 	"limitless.companion.title": "伴侶模組",
 	"limitless.companion.hint": "同系列的其他模組，點擊右側按鈕前往倉庫",
